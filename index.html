@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dither Generator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Main Canvas Container -->
+  <div class="halftone-container">
+    <video id="v" muted loop playsinline></video>
+    <canvas id="c"></canvas>
+  </div>
+
+  <!-- Control Panel Sidebar -->
+  <aside id="control-panel">
+    <div class="panel-header">
+      <h3>Halftone Controls</h3>
+      <button id="toggle-controls" type="button">Hide</button>
+    </div>
+    <div id="panel-content">
+      <form id="halftone-form">
+        <!-- Color Picker Section -->
+        <div class="ps-color-picker-container">
+          <div class="ps-header">
+            <span class="ps-label">Colors (FG / BG)</span>
+            <span id="active-target-label">Active: Foreground</span>
+          </div>
+          <div class="ps-widget">
+            <button type="button" id="swap-colors" title="Switch Foreground and Background">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" viewBox="0 0 24 24" fill="none">
+                <path fill-rule="evenodd" clip-rule="evenodd" d="M12.19 9.44537H13.19V7.44537H12.19C10.311 7.44537 8.599 5.73137 8.599 3.84937V2.84937H6.599V3.84937C6.599 5.73137 4.883 7.44537 3 7.44537H2V9.44537H3C4.343 9.44537 5.61 8.91137 6.599 8.05637V18.7894H8.599V8.05937C9.586 8.91337 10.85 9.44537 12.19 9.44537Z" fill="currentColor"></path>
+                <path opacity="0.4" fill-rule="evenodd" clip-rule="evenodd" d="M21.5001 14.5547C20.1561 14.5547 18.8901 15.0887 17.9001 15.9437V5.20972H15.9001V15.9407C14.9131 15.0867 13.6501 14.5547 12.3101 14.5547H11.3101V16.5547H12.3101C14.1881 16.5547 15.9001 18.2687 15.9001 20.1507V21.1507H17.9001V20.1507C17.9001 18.2687 19.6161 16.5547 21.5001 16.5547H22.5001V14.5547H21.5001Z" fill="currentColor"></path>
+              </svg>
+            </button>
+            <div class="color-boxes">
+              <div id="bg-display" title="Select Background to Edit" class="color-box bg-box">
+                <input type="color" name="bgColor" id="bgColorInput" value="#EDEDED">
+              </div>
+              <div id="fg-display" title="Select Foreground to Edit" class="color-box fg-box active-target">
+                <input type="color" name="dotColor" id="dotColorInput" value="#C8C8C8">
+              </div>
+            </div>
+          </div>
+
+          <!-- Brand Colors -->
+          <div class="swatch-label"><span>Brand</span></div>
+          <div class="swatch-row">
+            <button type="button" style="background:#fff" value="#fff" title="White" class="swatch"></button>
+            <button type="button" style="background:#f9fff7" value="#f9fff7" title="Brand 50" class="swatch"></button>
+            <button type="button" style="background:#f3ffef" value="#f3ffef" title="Brand 100" class="swatch"></button>
+            <button type="button" style="background:#e7fedf" value="#e7fedf" title="Brand 200" class="swatch"></button>
+            <button type="button" style="background:#dbfecf" value="#dbfecf" title="Brand 300" class="swatch"></button>
+            <button type="button" style="background:#cffdbf" value="#cffdbf" title="Brand 400" class="swatch"></button>
+            <button type="button" style="background:#c3fdaf" value="#c3fdaf" title="Brand 500" class="swatch"></button>
+            <button type="button" style="background:#8edf8d" value="#8edf8d" title="Brand 600" class="swatch"></button>
+            <button type="button" style="background:#77c16a" value="#77c16a" title="Brand 700" class="swatch"></button>
+            <button type="button" style="background:#4ba448" value="#4ba448" title="Brand 800" class="swatch"></button>
+            <button type="button" style="background:#2a8625" value="#2a8625" title="Brand 900" class="swatch"></button>
+            <button type="button" style="background:#096803" value="#096803" title="Brand 950" class="swatch"></button>
+          </div>
+
+          <!-- Grays -->
+          <div class="swatch-label"><span>Grays</span></div>
+          <div class="swatch-row">
+            <button type="button" style="background:#fcfcfd" value="#fcfcfd" title="Gray 25" class="swatch"></button>
+            <button type="button" style="background:#ededed" value="#ededed" title="Gray 50" class="swatch"></button>
+            <button type="button" style="background:#eaecf0" value="#eaecf0" title="Gray 200" class="swatch"></button>
+            <button type="button" style="background:#c8c8c8" value="#c8c8c8" title="Gray 300" class="swatch"></button>
+            <button type="button" style="background:#b6b6b6" value="#b6b6b6" title="Gray 400" class="swatch"></button>
+            <button type="button" style="background:#868686" value="#868686" title="Gray 500" class="swatch"></button>
+            <button type="button" style="background:#2e2e2e" value="#2e2e2e" title="Gray 700" class="swatch"></button>
+            <button type="button" style="background:#222222" value="#222222" title="Dark" class="swatch"></button>
+          </div>
+
+          <!-- Fuchsia -->
+          <div class="swatch-label collapsed"><span>Fuchsia</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#faf0fe" value="#faf0fe" title="Fuchsia 25" class="swatch"></button>
+            <button type="button" style="background:#f5e0fd" value="#f5e0fd" title="Fuchsia 50" class="swatch"></button>
+            <button type="button" style="background:#f0d1fc" value="#f0d1fc" title="Fuchsia 100" class="swatch"></button>
+            <button type="button" style="background:#ebc2fb" value="#ebc2fb" title="Fuchsia 200" class="swatch"></button>
+            <button type="button" style="background:#e1a3f9" value="#e1a3f9" title="Fuchsia 300" class="swatch"></button>
+            <button type="button" style="background:#d785f7" value="#d785f7" title="Fuchsia 400" class="swatch"></button>
+            <button type="button" style="background:#cd66f5" value="#cd66f5" title="Fuchsia 500" class="swatch"></button>
+            <button type="button" style="background:#ab52ce" value="#ab52ce" title="Fuchsia 600" class="swatch"></button>
+            <button type="button" style="background:#893ea6" value="#893ea6" title="Fuchsia 700" class="swatch"></button>
+            <button type="button" style="background:#6932a6" value="#6932a6" title="Fuchsia 800" class="swatch"></button>
+            <button type="button" style="background:#56216b" value="#56216b" title="Fuchsia 900" class="swatch"></button>
+            <button type="button" style="background:#451757" value="#451757" title="Fuchsia 950" class="swatch"></button>
+          </div>
+
+          <!-- Indigo -->
+          <div class="swatch-label collapsed"><span>Indigo</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#f5f8ff" value="#f5f8ff" title="Indigo 25" class="swatch"></button>
+            <button type="button" style="background:#eef4ff" value="#eef4ff" title="Indigo 50" class="swatch"></button>
+            <button type="button" style="background:#e0eaff" value="#e0eaff" title="Indigo 100" class="swatch"></button>
+            <button type="button" style="background:#c7d7fe" value="#c7d7fe" title="Indigo 200" class="swatch"></button>
+            <button type="button" style="background:#a4bcfd" value="#a4bcfd" title="Indigo 300" class="swatch"></button>
+            <button type="button" style="background:#6172f3" value="#6172f3" title="Indigo 400" class="swatch"></button>
+            <button type="button" style="background:#444ce7" value="#444ce7" title="Indigo 600" class="swatch"></button>
+            <button type="button" style="background:#3538cd" value="#3538cd" title="Indigo 700" class="swatch"></button>
+            <button type="button" style="background:#2d31a6" value="#2d31a6" title="Indigo 800" class="swatch"></button>
+            <button type="button" style="background:#2d3282" value="#2d3282" title="Indigo 900" class="swatch"></button>
+            <button type="button" style="background:#1f235b" value="#1f235b" title="Indigo 950" class="swatch"></button>
+          </div>
+
+          <!-- Blue Light -->
+          <div class="swatch-label collapsed"><span>Blue Light</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#f5fbff" value="#f5fbff" title="Blue 25" class="swatch"></button>
+            <button type="button" style="background:#f0f9ff" value="#f0f9ff" title="Blue 50" class="swatch"></button>
+            <button type="button" style="background:#e0f2fe" value="#e0f2fe" title="Blue 100" class="swatch"></button>
+            <button type="button" style="background:#b9e6fe" value="#b9e6fe" title="Blue 200" class="swatch"></button>
+            <button type="button" style="background:#7cd4fd" value="#7cd4fd" title="Blue 300" class="swatch"></button>
+            <button type="button" style="background:#36bffa" value="#36bffa" title="Blue 400" class="swatch"></button>
+            <button type="button" style="background:#0ba5ec" value="#0ba5ec" title="Blue 500" class="swatch"></button>
+            <button type="button" style="background:#0086c9" value="#0086c9" title="Blue 600" class="swatch"></button>
+            <button type="button" style="background:#026aa2" value="#026aa2" title="Blue 700" class="swatch"></button>
+            <button type="button" style="background:#065986" value="#065986" title="Blue 800" class="swatch"></button>
+            <button type="button" style="background:#0b4a6f" value="#0b4a6f" title="Blue 900" class="swatch"></button>
+            <button type="button" style="background:#062c41" value="#062c41" title="Blue 950" class="swatch"></button>
+          </div>
+
+          <!-- Orange -->
+          <div class="swatch-label collapsed"><span>Orange</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#fff4ec" value="#fff4ec" title="Orange 25" class="swatch"></button>
+            <button type="button" style="background:#ffe8d9" value="#ffe8d9" title="Orange 50" class="swatch"></button>
+            <button type="button" style="background:#ffddc6" value="#ffddc6" title="Orange 100" class="swatch"></button>
+            <button type="button" style="background:#ffd1b3" value="#ffd1b3" title="Orange 200" class="swatch"></button>
+            <button type="button" style="background:#ffba8e" value="#ffba8e" title="Orange 300" class="swatch"></button>
+            <button type="button" style="background:#ff9a4e" value="#ff9a4e" title="Orange 400" class="swatch"></button>
+            <button type="button" style="background:#ff8c42" value="#ff8c42" title="Orange 500" class="swatch"></button>
+            <button type="button" style="background:#d17235" value="#d17235" title="Orange 600" class="swatch"></button>
+            <button type="button" style="background:#a35b28" value="#a35b28" title="Orange 700" class="swatch"></button>
+            <button type="button" style="background:#753e1a" value="#753e1a" title="Orange 800" class="swatch"></button>
+            <button type="button" style="background:#5e3114" value="#5e3114" title="Orange 900" class="swatch"></button>
+            <button type="button" style="background:#47240d" value="#47240d" title="Orange 950" class="swatch"></button>
+          </div>
+
+          <!-- Green Light -->
+          <div class="swatch-label collapsed"><span>Green Light</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#fafef5" value="#fafef5" title="Green Light 25" class="swatch"></button>
+            <button type="button" style="background:#f3fee7" value="#f3fee7" title="Green Light 50" class="swatch"></button>
+            <button type="button" style="background:#e4fbcc" value="#e4fbcc" title="Green Light 100" class="swatch"></button>
+            <button type="button" style="background:#d0f8ab" value="#d0f8ab" title="Green Light 200" class="swatch"></button>
+            <button type="button" style="background:#a6ef67" value="#a6ef67" title="Green Light 300" class="swatch"></button>
+            <button type="button" style="background:#85e13a" value="#85e13a" title="Green Light 400" class="swatch"></button>
+            <button type="button" style="background:#66c61c" value="#66c61c" title="Green Light 500" class="swatch"></button>
+            <button type="button" style="background:#4ca30d" value="#4ca30d" title="Green Light 600" class="swatch"></button>
+            <button type="button" style="background:#3b7c0f" value="#3b7c0f" title="Green Light 700" class="swatch"></button>
+            <button type="button" style="background:#326212" value="#326212" title="Green Light 800" class="swatch"></button>
+            <button type="button" style="background:#2b5314" value="#2b5314" title="Green Light 900" class="swatch"></button>
+            <button type="button" style="background:#15290a" value="#15290a" title="Green Light 950" class="swatch"></button>
+          </div>
+
+          <!-- Green -->
+          <div class="swatch-label collapsed"><span>Green</span></div>
+          <div class="swatch-row collapsed">
+            <button type="button" style="background:#f6fef9" value="#f6fef9" title="Green 25" class="swatch"></button>
+            <button type="button" style="background:#edfcf2" value="#edfcf2" title="Green 50" class="swatch"></button>
+            <button type="button" style="background:#d3f8df" value="#d3f8df" title="Green 100" class="swatch"></button>
+            <button type="button" style="background:#aaf0c4" value="#aaf0c4" title="Green 200" class="swatch"></button>
+            <button type="button" style="background:#73e2a3" value="#73e2a3" title="Green 300" class="swatch"></button>
+            <button type="button" style="background:#3ccb7f" value="#3ccb7f" title="Green 400" class="swatch"></button>
+            <button type="button" style="background:#16b364" value="#16b364" title="Green 500" class="swatch"></button>
+            <button type="button" style="background:#099250" value="#099250" title="Green 600" class="swatch"></button>
+            <button type="button" style="background:#087443" value="#087443" title="Green 700" class="swatch"></button>
+            <button type="button" style="background:#095c37" value="#095c37" title="Green 800" class="swatch"></button>
+            <button type="button" style="background:#084c2e" value="#084c2e" title="Green 900" class="swatch"></button>
+            <button type="button" style="background:#052e1c" value="#052e1c" title="Green 950" class="swatch"></button>
+          </div>
+        </div>
+
+        <!-- Video Source -->
+        <label>
+          <span>Source Video URL:</span>
+          <input type="url" name="videoSrc" id="videoSrcInput" value="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/dove.mp4">
+        </label>
+        <div class="video-presets">
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/dove.mp4" class="preset-link">Dove</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/dove-2.mp4" class="preset-link">Dove 2</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/waves.mp4" class="preset-link">Waves</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/technology-network.mp4" class="preset-link">Tech Network</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/connection-technology.mp4" class="preset-link">Connection</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/map.mp4" class="preset-link">Map</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/touchscreen.mp4" class="preset-link">Touchscreen</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/hands-energy.mp4" class="preset-link">Hands Energy</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/holding-hands.mp4" class="preset-link">Holding Hands</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/hands-creation-adam.mp4" class="preset-link">Hands Creation</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/people-walking.mp4" class="preset-link">People Walking</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/walking.mp4" class="preset-link">Walking</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/walking-2.mp4" class="preset-link">Walking 2</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/silhouettes.mp4" class="preset-link">Silhouettes</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/laptop-man.mp4" class="preset-link">Laptop Man</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/flytrap.mp4" class="preset-link">Flytrap</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/flower-1.mp4" class="preset-link">Flower</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/flower-2.mp4" class="preset-link">Flower 2</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/hummingbird-1.mp4" class="preset-link">Hummingbird</span><span>|</span>
+          <span data-src="https://cdn.jsdelivr.net/gh/jon-tet/bg-vids@main/hummingbird-2.mp4" class="preset-link">Hummingbird 2</span>
+        </div>
+
+        <label>
+          <span>Show Source Video:</span>
+          <input type="checkbox" name="showColor" value="1">
+        </label>
+
+        <h4>Shape &amp; Grid Settings</h4>
+        <label>
+          <span>Shape Type:</span>
+          <select name="shapeMode">
+            <option value="mix" selected>Mix (Circle to Square)</option>
+            <option value="circle">Pure Circles</option>
+            <option value="square">Pure Squares</option>
+          </select>
+        </label>
+        <label>
+          <span>Grid Angle (Deg):</span>
+          <input type="number" name="gridAngle" min="0" max="90" step="1" value="90">
+        </label>
+        <label>
+          <span>Morph Start (Freq):</span>
+          <input type="range" name="morphStart" min="0.0" max="1.0" step="0.01" value="0.9">
+        </label>
+        <label>
+          <span>Morph End:</span>
+          <input type="range" name="morphEnd" min="0.0" max="1.0" step="0.01" value="1.0">
+        </label>
+        <label>
+          <span>Grid Size (px):</span>
+          <input type="number" name="gridSize" min="1" max="100" step="1" value="20">
+        </label>
+        <label>
+          <span>Min Radius:</span>
+          <input type="range" name="minRadius" min="0.0" max="1.0" step="0.01" value="0.2">
+        </label>
+        <label>
+          <span>Max Radius:</span>
+          <input type="range" name="maxRadius" min="0.0" max="1.0" step="0.01" value="0.5">
+        </label>
+
+        <h4>Levels / Thresholds</h4>
+        <label>
+          <span>Black Point (Start):</span>
+          <input type="range" name="thresholdStart" min="0.0" max="0.5" step="0.001" value="0.0">
+        </label>
+        <label>
+          <span>White Point (Sensitivity):</span>
+          <input type="range" name="thresholdEnd" min="0.01" max="1.0" step="0.01" value="1">
+        </label>
+
+        <div class="json-import-zone">
+          <h4>Configuration JSON</h4>
+          <label>
+            <textarea id="json-input" rows="5" placeholder="Paste config here..."></textarea>
+          </label>
+          <button id="apply-json" type="button">Update from JSON</button>
+        </div>
+      </form>
+    </div>
+    <button id="copy-config" type="button">Copy Configuration JSON</button>
+  </aside>
+
+  <!-- Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="js/generator.js"></script>
+</body>
+</html>

@@ -1,0 +1,454 @@
+/* ==========================================================================
+   DITHER GENERATOR - MAIN STYLES
+   ========================================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ==========================================================================
+   HALFTONE CANVAS CONTAINER
+   ========================================================================== */
+
+.halftone-container,
+#c,
+#v {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  will-change: transform;
+}
+
+#v {
+  visibility: hidden;
+}
+
+/* ==========================================================================
+   CONTROL PANEL SIDEBAR
+   ========================================================================== */
+
+#control-panel {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  color: #222;
+  padding: 15px;
+  border-radius: 8px;
+  max-height: 90vh;
+  width: 300px;
+  overflow-y: auto;
+  z-index: 99;
+  font-size: 0.875rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+/* Header layout */
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+#control-panel h3,
+#control-panel h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+#control-panel h4 {
+  margin-top: 15px;
+  margin-bottom: 8px;
+}
+
+/* Toggle Button */
+#toggle-controls {
+  background: #e0e0e0;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: #333;
+}
+
+#toggle-controls:hover {
+  background: #d0d0d0;
+}
+
+/* Minimized State */
+#control-panel.minimized {
+  width: auto;
+  max-height: auto;
+  overflow: hidden;
+}
+
+#control-panel.minimized #panel-content {
+  display: none;
+}
+
+#control-panel.minimized .panel-header {
+  margin-bottom: 0;
+}
+
+#control-panel.minimized #copy-config {
+  display: none;
+}
+
+/* Form Styling */
+#control-panel label {
+  display: block;
+  margin-bottom: 8px;
+  line-height: 1.2;
+}
+
+#control-panel input[type="range"],
+#control-panel input[type="number"],
+#control-panel input[type="url"],
+#control-panel select {
+  width: 100%;
+  margin-top: 4px;
+  display: block;
+}
+
+/* ==========================================================================
+   COLOR PICKER WIDGET
+   ========================================================================== */
+
+.ps-color-picker-container {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+  max-height: 400px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ps-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.ps-label {
+  font-weight: bold;
+  color: #333;
+}
+
+#active-target-label {
+  font-size: 0.7rem;
+  color: #666;
+  background: #eee;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.ps-widget {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+  height: 60px;
+  position: relative;
+}
+
+.color-boxes {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+.color-box {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ccc;
+  position: absolute;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-box input {
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.bg-box {
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  background-color: #ededed;
+}
+
+.fg-box {
+  top: 0;
+  left: 0;
+  z-index: 2;
+  background-color: #c8c8c8;
+}
+
+.active-target {
+  z-index: 10 !important;
+  border: 2px solid #333;
+  box-shadow: 0 0 0 2px #fff inset, 3px 3px 8px rgba(0,0,0,0.2);
+  transform: scale(1.05);
+}
+
+#swap-colors {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  margin-top: 5px;
+  transition: transform 0.2s;
+}
+
+#swap-colors:hover {
+  transform: rotate(180deg);
+  color: #000;
+}
+
+/* ==========================================================================
+   SWATCHES
+   ========================================================================== */
+
+.swatch-label {
+  font-size: 0.7rem;
+  color: #666;
+  margin-bottom: 4px;
+  margin-top: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.swatch-label:hover {
+  color: #333;
+}
+
+.swatch-label::before {
+  content: '▼';
+  font-size: 0.5rem;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.swatch-label.collapsed::before {
+  transform: rotate(-90deg);
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+  overflow: hidden;
+  max-height: 100px;
+  transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.3s ease;
+}
+
+.swatch-row.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,0,0,0.1);
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.swatch:hover {
+  transform: scale(1.15);
+  border-color: #333;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  z-index: 1;
+  position: relative;
+}
+
+.swatch:active {
+  transform: scale(0.95);
+}
+
+/* Dark swatch adjustments */
+.swatch[style*="#222"],
+.swatch[style*="#2e2e2e"],
+.swatch[style*="#1f235b"],
+.swatch[style*="#062c41"],
+.swatch[style*="#47240d"],
+.swatch[style*="#15290a"],
+.swatch[style*="#052e1c"],
+.swatch[style*="#053321"],
+.swatch[style*="#4e1d09"],
+.swatch[style*="#55160c"],
+.swatch[style*="#451757"],
+.swatch[style*="#56216b"] {
+  border-color: rgba(255,255,255,0.3);
+}
+
+/* Light swatch adjustments */
+.swatch[style*="#fff"],
+.swatch[style*="#fcfcfd"],
+.swatch[style*="#f9fff7"],
+.swatch[style*="#f3ffef"],
+.swatch[style*="#faf0fe"],
+.swatch[style*="#f5f8ff"],
+.swatch[style*="#f5fbff"],
+.swatch[style*="#fff4ec"],
+.swatch[style*="#fafef5"],
+.swatch[style*="#f6fef9"],
+.swatch[style*="#fffcf5"],
+.swatch[style*="#fffbfa"] {
+  border-color: rgba(0,0,0,0.15);
+}
+
+/* Custom scrollbar */
+.ps-color-picker-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ps-color-picker-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.ps-color-picker-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.ps-color-picker-container::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* ==========================================================================
+   VIDEO PRESETS
+   ========================================================================== */
+
+.video-presets {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: -4px;
+  margin-bottom: 15px;
+  line-height: 1.4;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.preset-link {
+  cursor: pointer;
+  color: #222;
+  text-decoration: underline;
+  text-decoration-color: #ccc;
+  transition: color 0.2s, text-decoration-color 0.2s;
+}
+
+.preset-link:hover {
+  color: #000;
+  text-decoration-color: #000;
+  font-weight: bold;
+}
+
+/* ==========================================================================
+   JSON IMPORT/EXPORT
+   ========================================================================== */
+
+.json-import-zone {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+#json-input {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: #f9f9f9;
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.7rem;
+  line-height: 1.4;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+#json-input:focus {
+  outline: none;
+  border-color: #999;
+  background: #fff;
+}
+
+#apply-json {
+  width: 100%;
+  margin-top: 10px;
+  background: transparent;
+  color: #000000;
+  border: 1px solid #000000;
+  padding: 10px;
+  overflow: clip;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, transform 0.1s;
+  text-align: center;
+}
+
+#apply-json:hover {
+  background: #000;
+  color: #ffffff;
+}
+
+#apply-json:active {
+  transform: scale(0.98);
+}
+
+#apply-json.success { background: #28a745; color: #fff; border-color: #28a745; }
+#apply-json.error { background: #a72828; color: #fff; border-color: #a72828; }
+
+#copy-config {
+  margin-top: 20px;
+  width: 100%;
+  background: #222;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: background 0.2s;
+}
+
+#copy-config:hover {
+  background: #000;
+}
