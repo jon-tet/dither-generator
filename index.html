@@ -330,5 +330,87 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="js/generator.js"></script>
+  <script>
+// Source tab switching logic
+document.querySelectorAll('.source-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        // Update tab states
+        document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+
+        // Update panel states
+        const sourceType = this.getAttribute('data-source');
+        document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(sourceType + '-panel').classList.add('active');
+    });
+});
+// Drag and drop handling
+const dropZone = document.getElementById('imageDropZone');
+const imageUpload = document.getElementById('imageUpload');
+if (dropZone) {
+    dropZone.addEventListener('click', () => imageUpload.click());
+
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type.startsWith('image/')) {
+            // Trigger the file input change handler
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            imageUpload.files = dataTransfer.files;
+            imageUpload.dispatchEvent(new Event('change'));
+        }
+    });
+}
+// Update image info display when image is loaded
+if (imageUpload) {
+    imageUpload.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const imageInfo = document.getElementById('imageInfo');
+            const imagePreview = document.getElementById('imagePreview');
+            const imageName = document.getElementById('imageName');
+            const imageSize = document.getElementById('imageSize');
+
+            // Show image info panel
+            imageInfo.classList.add('has-image');
+
+            // Set preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // Set name and size
+            imageName.textContent = file.name;
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            const sizeKB = (file.size / 1024).toFixed(1);
+            imageSize.textContent = file.size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+        }
+    });
+}
+// Clear image handler
+const clearImageBtn = document.getElementById('clearImage');
+if (clearImageBtn) {
+    clearImageBtn.addEventListener('click', () => {
+        const imageInfo = document.getElementById('imageInfo');
+        imageInfo.classList.remove('has-image');
+        document.getElementById('imagePreview').src = '';
+        document.getElementById('imageUrlInput').value = '';
+    });
+}
+  </script>
 </body>
 </html>
