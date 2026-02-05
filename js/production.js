@@ -255,7 +255,7 @@
 
           // Shimmer effect using blue noise
           float shimmer = 1.0;
-          if (u_shimmerAmount > 0.0 && u_blueNoise != u_texture) {
+          if (u_shimmerAmount > 0.0) {
             vec2 noiseUV = gridIndex * 0.1 + vec2(sin(u_time * 0.5) * 0.1, cos(u_time * 0.3) * 0.1);
             float noiseVal = texture(u_blueNoise, noiseUV).r;
             shimmer = mix(1.0, 0.5 + noiseVal * 0.5, u_shimmerAmount);
