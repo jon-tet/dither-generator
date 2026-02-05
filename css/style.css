@@ -344,6 +344,121 @@ body {
 }
 
 /* ==========================================================================
+   SOURCE TYPE TABS
+   ========================================================================== */
+
+.source-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.source-tab {
+  flex: 1;
+  padding: 8px 12px;
+  background: #f5f5f5;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #666;
+  transition: all 0.2s ease;
+}
+
+.source-tab:hover {
+  background: #eee;
+}
+
+.source-tab.active {
+  background: #222;
+  color: #fff;
+}
+
+.source-section {
+  display: none;
+}
+
+.source-section.active {
+  display: block;
+}
+
+/* ==========================================================================
+   IMAGE UPLOAD ZONE
+   ========================================================================== */
+
+.upload-zone {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.upload-zone:hover {
+  border-color: #999;
+  background: #f0f0f0;
+}
+
+.upload-zone.drag-over {
+  border-color: #4ba448;
+  background: #f0fff0;
+  transform: scale(1.02);
+}
+
+.upload-zone.has-image {
+  border-style: solid;
+  border-color: #4ba448;
+  background: #f8fff8;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  opacity: 0.6;
+}
+
+.upload-text {
+  font-size: 0.8rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.upload-hint {
+  font-size: 0.7rem;
+  color: #999;
+}
+
+.load-url-btn {
+  width: 100%;
+  padding: 8px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.load-url-btn:hover {
+  background: #eee;
+  border-color: #ccc;
+}
+
+/* ==========================================================================
    VIDEO PRESETS
    ========================================================================== */
 
@@ -371,6 +486,81 @@ body {
   color: #000;
   text-decoration-color: #000;
   font-weight: bold;
+}
+
+/* ==========================================================================
+   EXPORT SECTION
+   ========================================================================== */
+
+.export-section {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #ddd;
+}
+
+.export-options {
+  margin-bottom: 15px;
+}
+
+.export-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, #4ba448 0%, #2a8625 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(75, 164, 72, 0.4);
+}
+
+.export-btn:active {
+  transform: translateY(0);
+}
+
+.export-btn.recording {
+  background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+}
+
+.export-btn.recording:hover {
+  box-shadow: 0 4px 12px rgba(198, 40, 40, 0.4);
+}
+
+.export-progress {
+  margin-top: 12px;
+  text-align: center;
+}
+
+.export-progress.hidden {
+  display: none;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #eee;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ba448 0%, #77c16a 100%);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #666;
 }
 
 /* ==========================================================================

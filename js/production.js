@@ -15,13 +15,53 @@
  *      data-video-src="https://example.com/video.mp4"
  *      data-fg-color="#C8C8C8"
  *      data-bg-color="#EDEDED"
- *      data-halftone-config='{"gridSize":20,"minRadius":0.2,"maxRadius":0.5}'>
+ *      data-halftone-config='{"gridSize":20,"minRadius":0.2,"maxRadius":0.5,"contrast":1.0,"brightness":0.0}'>
  * </div>
+ *
+ * Config options:
+ * - gridSize: Size of halftone grid (default: 20)
+ * - minRadius: Minimum dot radius (default: 0.2)
+ * - maxRadius: Maximum dot radius (default: 0.5)
+ * - morphStart: Morph start threshold (default: 0.75)
+ * - morphEnd: Morph end threshold (default: 0.95)
+ * - thresholdStart: Black point (default: 0.0)
+ * - thresholdEnd: White point (default: 0.2)
+ * - gridAngle: Rotation angle in degrees (default: 0)
+ * - shapeMode: "circle", "square", or "mix" (default: "mix")
+ * - dotSize: Overall dot size multiplier (default: 1.0)
+ * - sizeVariation: Random size variation 0-1 (default: 0.0)
+ * - opacityVariation: Random opacity variation 0-1 (default: 0.0)
+ * - contrast: Contrast adjustment 0.5-2.0 (default: 1.0)
+ * - brightness: Brightness adjustment -0.5-0.5 (default: 0.0)
+ * - invert: Invert grayscale (default: false)
+ * - shimmerAmount: Blue noise shimmer 0-1 (default: 0.0)
  */
 
 (function () {
   // Shared geometry across all instances for performance
   const sharedGeometry = new THREE.PlaneGeometry(2, 2);
+
+  // Shared blue noise texture
+  let sharedBlueNoise = null;
+  const blueNoiseLoader = new THREE.TextureLoader();
+  blueNoiseLoader.load(
+    'https://momentsingraphics.de/Media/BlueNoise/LDR_RGBA_0.png',
+    (tex) => {
+      sharedBlueNoise = tex;
+      sharedBlueNoise.wrapS = THREE.RepeatWrapping;
+      sharedBlueNoise.wrapT = THREE.RepeatWrapping;
+      sharedBlueNoise.minFilter = THREE.NearestFilter;
+      sharedBlueNoise.magFilter = THREE.NearestFilter;
+      // Update all existing instances
+      instances.forEach(inst => {
+        if (inst.uniforms.u_blueNoise) {
+          inst.uniforms.u_blueNoise.value = sharedBlueNoise;
+        }
+      });
+    },
+    undefined,
+    () => console.warn('Blue noise texture failed to load')
+  );
 
   const instances = [];
 
@@ -117,6 +157,7 @@
 
     const uniforms = {
       u_texture: { value: texture },
+      u_blueNoise: { value: sharedBlueNoise },
       u_resolution: { value: new THREE.Vector2() },
       u_time: { value: 0 },
       u_textureScale: { value: new THREE.Vector2(1, 1) },
@@ -131,7 +172,15 @@
       u_bgColor: { value: new THREE.Color(bgColor) },
       u_dotColor: { value: new THREE.Color(fgColor) },
       u_showColor: { value: safeVal(config.showColor, 0.0) },
-      u_shapeMode: { value: 2.0 }
+      u_shapeMode: { value: 2.0 },
+      // New uniforms
+      u_dotSize: { value: safeVal(config.dotSize, 1.0) },
+      u_sizeVariation: { value: safeVal(config.sizeVariation, 0.0) },
+      u_opacityVariation: { value: safeVal(config.opacityVariation, 0.0) },
+      u_contrast: { value: safeVal(config.contrast, 1.0) },
+      u_brightness: { value: safeVal(config.brightness, 0.0) },
+      u_invert: { value: config.invert ? 1.0 : 0.0 },
+      u_shimmerAmount: { value: safeVal(config.shimmerAmount, 0.0) }
     };
 
     if (config.shapeMode === 'circle') uniforms.u_shapeMode.value = 0.0;
@@ -144,8 +193,10 @@
       fragmentShader: `
         precision highp float;
         uniform sampler2D u_texture;
+        uniform sampler2D u_blueNoise;
         uniform vec2 u_resolution;
         uniform vec2 u_textureScale;
+        uniform float u_time;
         uniform float u_gridSize;
         uniform float u_minRadius;
         uniform float u_maxRadius;
@@ -158,12 +209,36 @@
         uniform float u_showColor;
         uniform float u_shapeMode;
         uniform float u_angle;
+        uniform float u_dotSize;
+        uniform float u_sizeVariation;
+        uniform float u_opacityVariation;
+        uniform float u_contrast;
+        uniform float u_brightness;
+        uniform float u_invert;
+        uniform float u_shimmerAmount;
         in vec2 vUv;
         out vec4 fragColor;
+
         vec3 linearToSRGB(vec3 c) { return mix(c * 12.92, 1.055 * pow(c, vec3(0.41666)) - 0.055, step(0.0031308, c)); }
-        float getGray(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+
+        float getGray(vec3 c) {
+          float gray = dot(c, vec3(0.299, 0.587, 0.114));
+          // Apply contrast and brightness
+          gray = (gray - 0.5) * u_contrast + 0.5 + u_brightness;
+          gray = clamp(gray, 0.0, 1.0);
+          // Apply invert
+          if (u_invert > 0.5) gray = 1.0 - gray;
+          return gray;
+        }
+
         vec2 getCoverUV(vec2 uv) { return (uv - 0.5) * u_textureScale + 0.5; }
         mat2 rotate2d(float angle) { return mat2(cos(angle), -sin(angle), sin(angle), cos(angle)); }
+
+        // Hash function for variation
+        float hash(vec2 p) {
+          return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+        }
+
         void main() {
           vec2 pixelPos = vUv * u_resolution;
           vec2 center = u_resolution * 0.5;
@@ -180,7 +255,23 @@
           float gray = getGray(col);
           float safeEnd = max(u_thresholdEnd, u_thresholdStart + 0.001);
           float z = smoothstep(u_thresholdStart, safeEnd, gray);
-          float radius = mix(u_minRadius, u_maxRadius, z) * 0.5;
+
+          // Size variation based on cell position
+          float sizeVar = 1.0;
+          if (u_sizeVariation > 0.0) {
+            float noise = hash(gridIndex);
+            sizeVar = mix(1.0, 0.5 + noise, u_sizeVariation);
+          }
+
+          // Shimmer effect using blue noise
+          float shimmer = 1.0;
+          if (u_shimmerAmount > 0.0 && u_blueNoise != u_texture) {
+            vec2 noiseUV = gridIndex * 0.1 + u_time * 0.5;
+            float noiseVal = texture(u_blueNoise, noiseUV).r;
+            shimmer = mix(1.0, 0.3 + noiseVal * 0.7, u_shimmerAmount);
+          }
+
+          float radius = mix(u_minRadius, u_maxRadius, z) * 0.5 * u_dotSize * sizeVar * shimmer;
           vec2 localPos = (rotatedPos - cellCenterRotated) / u_gridSize;
           float morphFactor = smoothstep(u_morphStart, u_morphEnd, z);
           if (u_shapeMode == 0.0) morphFactor = 0.0;
@@ -189,6 +280,15 @@
           float dist = dMetric - radius;
           float aa = fwidth(dist);
           float mask = 1.0 - smoothstep(-aa, 0.0, dist);
+
+          // Opacity variation
+          float opacity = 1.0;
+          if (u_opacityVariation > 0.0) {
+            float opNoise = hash(gridIndex + 100.0);
+            opacity = mix(1.0, 0.3 + opNoise * 0.7, u_opacityVariation);
+          }
+          mask *= opacity;
+
           if (u_showColor > 0.5) { fragColor = texture(u_texture, getCoverUV(vUv)); return; }
           vec3 finalColorLinear = mix(u_bgColor, u_dotColor, mask);
           fragColor = vec4(linearToSRGB(finalColorLinear), 1.0);
