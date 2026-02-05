@@ -1,19 +1,21 @@
 /**
  * Dither Generator
  * Interactive halftone/dither effect generator using Three.js
- * With image support, new controls, shimmer, and video export
  */
-
 (function () {
+  // ===========================================
+  // UI ELEMENTS
+  // ===========================================
   const form = document.getElementById('halftone-form');
   const jsonInput = document.getElementById('json-input');
   const applyJsonBtn = document.getElementById('apply-json');
   const copyBtn = document.getElementById('copy-config');
-
-  // --- UI LOGIC ---
   const toggleButton = document.getElementById('toggle-controls');
   const controlPanel = document.getElementById('control-panel');
 
+  // ===========================================
+  // TOGGLE CONTROLS
+  // ===========================================
   if (toggleButton) {
     toggleButton.addEventListener('click', (e) => {
       e.preventDefault();
@@ -22,7 +24,9 @@
     });
   }
 
-  // COLORS
+  // ===========================================
+  // COLOR PICKER
+  // ===========================================
   const fgInput = document.getElementById('dotColorInput');
   const bgInput = document.getElementById('bgColorInput');
   const fgDisplay = document.getElementById('fg-display');
@@ -38,25 +42,18 @@
 
   function setActiveTarget(input, displayElement, name) {
     activeInput = input;
-    fgDisplay.classList.remove('active-target');
-    bgDisplay.classList.remove('active-target');
-    displayElement.classList.add('active-target');
+    if (fgDisplay) fgDisplay.classList.remove('active-target');
+    if (bgDisplay) bgDisplay.classList.remove('active-target');
+    if (displayElement) displayElement.classList.add('active-target');
     if (activeLabel) activeLabel.textContent = "Active: " + name;
   }
 
   if (fgInput && bgInput) {
     updateColorVisuals();
-    fgInput.addEventListener('input', () => {
-      updateColorVisuals();
-      syncAll();
-    });
-    bgInput.addEventListener('input', () => {
-      updateColorVisuals();
-      syncAll();
-    });
-    fgDisplay.addEventListener('click', () => setActiveTarget(fgInput, fgDisplay, "Foreground"));
-    bgDisplay.addEventListener('click', () => setActiveTarget(bgInput, bgDisplay, "Background"));
-
+    fgInput.addEventListener('input', () => { updateColorVisuals(); syncAll(); });
+    bgInput.addEventListener('input', () => { updateColorVisuals(); syncAll(); });
+    if (fgDisplay) fgDisplay.addEventListener('click', () => setActiveTarget(fgInput, fgDisplay, "Foreground"));
+    if (bgDisplay) bgDisplay.addEventListener('click', () => setActiveTarget(bgInput, bgDisplay, "Background"));
     if (swapBtn) {
       swapBtn.addEventListener('click', () => {
         const temp = fgInput.value;
@@ -68,7 +65,9 @@
     }
   }
 
-  // SWATCHES & PRESETS
+  // ===========================================
+  // SWATCHES
+  // ===========================================
   document.querySelectorAll('.swatch').forEach(swatch => {
     swatch.addEventListener('click', function () {
       if (activeInput) {
@@ -82,10 +81,8 @@
   // Collapsible swatch groups
   document.querySelectorAll('.swatch-label').forEach(label => {
     if (label.closest('.swatch-favorites')) return;
-
     label.addEventListener('click', function (e) {
       if (this.closest('.ps-header')) return;
-
       const nextRow = this.nextElementSibling;
       if (nextRow && nextRow.classList.contains('swatch-row')) {
         this.classList.toggle('collapsed');
@@ -118,46 +115,48 @@
     });
   });
 
-  // --- SOURCE TYPE TABS ---
-  const sourceTabs = document.querySelectorAll('.source-tab');
-  const videoPanel = document.getElementById('video-panel');
-  const imagePanel = document.getElementById('image-panel');
+  // ===========================================
+  // SOURCE TYPE TABS
+  // ===========================================
   let currentSourceType = 'video';
 
-  sourceTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      sourceTabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-      currentSourceType = tab.dataset.source;
+  document.querySelectorAll('.source-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.source-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
 
-      if (currentSourceType === 'video') {
-        videoPanel.classList.add('active');
-        imagePanel.classList.remove('active');
+      const sourceType = this.getAttribute('data-source');
+      currentSourceType = sourceType;
+
+      document.querySelectorAll('.source-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById(sourceType + '-panel').classList.add('active');
+
+      if (sourceType === 'video') {
         switchToVideo();
-      } else {
-        videoPanel.classList.remove('active');
-        imagePanel.classList.add('active');
       }
     });
   });
 
-  // --- IMAGE UPLOAD ---
+  // ===========================================
+  // IMAGE UPLOAD
+  // ===========================================
   const dropZone = document.getElementById('imageDropZone');
   const imageUpload = document.getElementById('imageUpload');
   const imageInfo = document.getElementById('imageInfo');
   const imagePreview = document.getElementById('imagePreview');
   const imageName = document.getElementById('imageName');
   const imageSize = document.getElementById('imageSize');
-  const clearImage = document.getElementById('clearImage');
+  const clearImageBtn = document.getElementById('clearImage');
   const imageUrlInput = document.getElementById('imageUrlInput');
   const loadImageUrlBtn = document.getElementById('loadImageUrl');
+
   let uploadedImage = null;
   let imageTexture = null;
 
   if (dropZone) {
     dropZone.addEventListener('click', (e) => {
-      if (e.target !== clearImage && !clearImage.contains(e.target)) {
-        imageUpload.click();
+      if (e.target !== clearImageBtn && !clearImageBtn?.contains(e.target)) {
+        imageUpload?.click();
       }
     });
 
@@ -174,25 +173,28 @@
       e.preventDefault();
       dropZone.classList.remove('drag-over');
       const files = e.dataTransfer.files;
-      if (files.length > 0) handleImageFile(files[0]);
+      if (files.length > 0 && files[0].type.startsWith('image/')) {
+        handleImageFile(files[0]);
+      }
     });
   }
 
   if (imageUpload) {
-    imageUpload.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) handleImageFile(e.target.files[0]);
+    imageUpload.addEventListener('change', function() {
+      const file = this.files[0];
+      if (file) handleImageFile(file);
     });
   }
 
   if (loadImageUrlBtn) {
     loadImageUrlBtn.addEventListener('click', () => {
-      const url = imageUrlInput.value.trim();
+      const url = imageUrlInput?.value.trim();
       if (url) loadImageFromUrl(url, 'URL Image');
     });
   }
 
-  if (clearImage) {
-    clearImage.addEventListener('click', (e) => {
+  if (clearImageBtn) {
+    clearImageBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       clearUploadedImage();
     });
@@ -225,12 +227,13 @@
   }
 
   function showImageInfo(name, size, url) {
-    if (imageInfo) imageInfo.classList.add('visible');
-    if (dropZone) dropZone.classList.add('has-image');
+    if (imageInfo) imageInfo.classList.add('has-image');
     if (imagePreview) imagePreview.src = url;
     if (imageName) imageName.textContent = name;
     if (imageSize && size) {
-      imageSize.textContent = formatFileSize(size);
+      const sizeMB = (size / (1024 * 1024)).toFixed(2);
+      const sizeKB = (size / 1024).toFixed(1);
+      imageSize.textContent = size > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
     } else if (imageSize) {
       imageSize.textContent = '';
     }
@@ -242,19 +245,13 @@
       imageTexture.dispose();
       imageTexture = null;
     }
-    if (imageInfo) imageInfo.classList.remove('visible');
-    if (dropZone) dropZone.classList.remove('has-image');
+    if (imageInfo) imageInfo.classList.remove('has-image');
     if (imagePreview) imagePreview.src = '';
     if (imageName) imageName.textContent = '';
     if (imageSize) imageSize.textContent = '';
     if (imageUpload) imageUpload.value = '';
+    if (imageUrlInput) imageUrlInput.value = '';
     switchToVideo();
-  }
-
-  function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   }
 
   function createImageTexture(img) {
@@ -268,7 +265,6 @@
   function switchToImage() {
     if (imageTexture && uniforms) {
       uniforms.u_texture.value = imageTexture;
-      uniforms.u_useVideo.value = 0.0;
       updateCover();
     }
   }
@@ -276,12 +272,13 @@
   function switchToVideo() {
     if (texture && uniforms) {
       uniforms.u_texture.value = texture;
-      uniforms.u_useVideo.value = 1.0;
       updateCover();
     }
   }
 
-  // --- JSON IMPORT/EXPORT ---
+  // ===========================================
+  // JSON IMPORT/EXPORT
+  // ===========================================
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
       const jsonString = JSON.stringify(controls, null, 2);
@@ -316,6 +313,9 @@
     });
   }
 
+  // ===========================================
+  // CONTROLS
+  // ===========================================
   let controls = {};
 
   function readControls() {
@@ -334,10 +334,7 @@
       morphEnd: safeFloat('morphEnd', 1.0),
       gridSize: safeFloat('gridSize', 20.0),
       showColor: formData.get('showColor') ? 1.0 : 0.0,
-      thresholdStart: safeFloat('thresholdStart', 0.0),
-      thresholdEnd: safeFloat('thresholdEnd', 1.0),
       gridAngle: safeFloat('gridAngle', 90.0),
-      // New controls
       dotSize: safeFloat('dotSize', 0.35),
       sizeVariation: safeFloat('sizeVariation', 0.5),
       opacityVariation: safeFloat('opacityVariation', 0.0),
@@ -361,7 +358,9 @@
     });
   }
 
-  // --- THREE.JS INITIALIZATION ---
+  // ===========================================
+  // THREE.JS SETUP
+  // ===========================================
   initControls();
 
   const container = document.querySelector('.halftone-container');
@@ -388,7 +387,7 @@
   const geometry = new THREE.PlaneGeometry(2, 2);
   const texture = new THREE.VideoTexture(video);
 
-  // Load blue noise texture for shimmer
+  // Blue noise texture for shimmer
   let blueNoiseTexture = null;
   const blueNoiseLoader = new THREE.TextureLoader();
   blueNoiseLoader.load(
@@ -400,9 +399,7 @@
       blueNoiseTexture.minFilter = THREE.NearestFilter;
       blueNoiseTexture.magFilter = THREE.NearestFilter;
       if (uniforms) uniforms.u_blueNoise.value = blueNoiseTexture;
-    },
-    undefined,
-    (err) => console.warn('Blue noise texture failed to load, shimmer will be disabled')
+    }
   );
 
   const uniforms = {
@@ -414,15 +411,11 @@
     u_gridSize: { value: controls.gridSize },
     u_morphStart: { value: controls.morphStart },
     u_morphEnd: { value: controls.morphEnd },
-    u_thresholdStart: { value: controls.thresholdStart },
-    u_thresholdEnd: { value: controls.thresholdEnd },
     u_angle: { value: 0 },
     u_bgColor: { value: new THREE.Color(controls.bgColor) },
     u_dotColor: { value: new THREE.Color(controls.dotColor) },
     u_showColor: { value: controls.showColor },
     u_shapeMode: { value: 2.0 },
-    u_useVideo: { value: 1.0 },
-    // New uniforms
     u_dotSize: { value: controls.dotSize },
     u_sizeVariation: { value: controls.sizeVariation },
     u_opacityVariation: { value: controls.opacityVariation },
@@ -444,7 +437,7 @@
       uniform vec2 u_textureScale;
       uniform float u_time;
       uniform float u_gridSize, u_morphStart, u_morphEnd;
-      uniform float u_thresholdStart, u_thresholdEnd, u_showColor, u_shapeMode, u_angle;
+      uniform float u_showColor, u_shapeMode, u_angle;
       uniform float u_dotSize, u_sizeVariation, u_opacityVariation;
       uniform float u_contrast, u_brightness, u_invert, u_shimmerAmount;
       uniform vec3 u_bgColor, u_dotColor;
@@ -455,10 +448,8 @@
 
       float getGray(vec3 c) {
         float gray = dot(c, vec3(0.299, 0.587, 0.114));
-        // Apply contrast and brightness
         gray = (gray - 0.5) * u_contrast + 0.5 + u_brightness;
         gray = clamp(gray, 0.0, 1.0);
-        // Apply invert
         if (u_invert > 0.5) gray = 1.0 - gray;
         return gray;
       }
@@ -466,10 +457,7 @@
       vec2 getCoverUV(vec2 uv) { return (uv - 0.5) * u_textureScale + 0.5; }
       mat2 rotate2d(float a) { return mat2(cos(a), -sin(a), sin(a), cos(a)); }
 
-      // Hash function for variation
-      float hash(vec2 p) {
-        return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-      }
+      float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
       void main() {
         vec2 pixelPos = vUv * u_resolution;
@@ -481,16 +469,14 @@
         vec2 cellUV = (transpose(rot) * cellCenterRotated + center) / u_resolution;
 
         vec3 col = texture(u_texture, getCoverUV(cellUV)).rgb;
-        float z = smoothstep(u_thresholdStart, max(u_thresholdEnd, u_thresholdStart+0.01), getGray(col));
+        float z = getGray(col);
 
-        // Size variation based on cell position
         float sizeVar = 1.0;
         if (u_sizeVariation > 0.0) {
           float noise = hash(gridIndex);
           sizeVar = mix(1.0, 0.5 + noise, u_sizeVariation);
         }
 
-        // Shimmer effect using blue noise
         float shimmer = 1.0;
         if (u_shimmerAmount > 0.0 && u_blueNoise != u_texture) {
           vec2 noiseUV = gridIndex * 0.1 + vec2(sin(u_time * 0.5) * 0.1, cos(u_time * 0.3) * 0.1);
@@ -501,12 +487,12 @@
         float radius = z * 0.5 * u_dotSize * sizeVar * shimmer;
         vec2 localPos = (rotatedPos - cellCenterRotated) / u_gridSize;
         float m = smoothstep(u_morphStart, u_morphEnd, z);
-        if(u_shapeMode == 0.0) m = 0.0; else if(u_shapeMode == 1.0) m = 1.0;
+        if (u_shapeMode == 0.0) m = 0.0;
+        else if (u_shapeMode == 1.0) m = 1.0;
 
         float dist = mix(length(localPos), max(abs(localPos.x), abs(localPos.y)), m) - radius;
         float mask = 1.0 - smoothstep(-fwidth(dist), 0.0, dist);
 
-        // Opacity variation
         float opacity = 1.0;
         if (u_opacityVariation > 0.0) {
           float opNoise = hash(gridIndex + 100.0);
@@ -529,11 +515,7 @@
     uniforms.u_morphStart.value = controls.morphStart;
     uniforms.u_morphEnd.value = controls.morphEnd;
     uniforms.u_showColor.value = controls.showColor;
-    uniforms.u_thresholdStart.value = controls.thresholdStart;
-    uniforms.u_thresholdEnd.value = controls.thresholdEnd;
     uniforms.u_angle.value = controls.gridAngle * (Math.PI / 180);
-
-    // New controls
     uniforms.u_dotSize.value = controls.dotSize;
     uniforms.u_sizeVariation.value = controls.sizeVariation;
     uniforms.u_opacityVariation.value = controls.opacityVariation;
@@ -560,15 +542,12 @@
     uniforms.u_resolution.value.set(cw, ch);
 
     let sourceWidth, sourceHeight;
-    if (currentSourceType === 'video') {
+    if (currentSourceType === 'video' || !uploadedImage) {
       sourceWidth = video.videoWidth || 1920;
       sourceHeight = video.videoHeight || 1080;
-    } else if (uploadedImage) {
+    } else {
       sourceWidth = uploadedImage.width;
       sourceHeight = uploadedImage.height;
-    } else {
-      sourceWidth = 1920;
-      sourceHeight = 1080;
     }
 
     const aspect = (cw / ch) / (sourceWidth / sourceHeight);
@@ -589,16 +568,15 @@
     animate();
   };
 
-  // Handle autoplay restrictions
   video.oncanplay = () => {
     video.play().catch(() => {
-      document.body.addEventListener('click', () => {
-        video.play();
-      }, { once: true });
+      document.body.addEventListener('click', () => video.play(), { once: true });
     });
   };
 
-  // --- VIDEO EXPORT ---
+  // ===========================================
+  // VIDEO EXPORT
+  // ===========================================
   const exportBtn = document.getElementById('export-video');
   const exportQuality = document.getElementById('export-quality');
   const exportProgress = document.querySelector('.export-progress');
@@ -618,41 +596,28 @@
     let width, height, bitrate;
 
     switch (quality) {
-      case '4k':
-        width = 3840; height = 2160; bitrate = 20000000;
-        break;
-      case '1440p':
-        width = 2560; height = 1440; bitrate = 12000000;
-        break;
-      default:
-        width = 1920; height = 1080; bitrate = 8000000;
+      case '4k': width = 3840; height = 2160; bitrate = 20000000; break;
+      case '1440p': width = 2560; height = 1440; bitrate = 12000000; break;
+      default: width = 1920; height = 1080; bitrate = 8000000;
     }
 
-    // Calculate grid size scaling factor
     const currentWidth = container.clientWidth;
     const scaleFactor = width / currentWidth;
-    const originalGridSize = uniforms.u_gridSize.value;
-    const exportGridSize = originalGridSize * scaleFactor;
+    const exportGridSize = uniforms.u_gridSize.value * scaleFactor;
 
     exportBtn.disabled = true;
     exportBtn.textContent = 'Preparing...';
     if (exportProgress) exportProgress.style.display = 'block';
-    if (exportStatus) exportStatus.textContent = 'Initializing export...';
+    if (exportStatus) exportStatus.textContent = 'Initializing...';
 
-    // Create offscreen canvas
     const offCanvas = document.createElement('canvas');
     offCanvas.width = width;
     offCanvas.height = height;
 
-    const offRenderer = new THREE.WebGLRenderer({
-      canvas: offCanvas,
-      antialias: false,
-      preserveDrawingBuffer: true
-    });
+    const offRenderer = new THREE.WebGLRenderer({ canvas: offCanvas, preserveDrawingBuffer: true });
     offRenderer.setSize(width, height, false);
     offRenderer.outputColorSpace = THREE.SRGBColorSpace;
 
-    // Clone uniforms for export
     const exportUniforms = {};
     for (const key in uniforms) {
       if (uniforms[key].value instanceof THREE.Vector2) {
@@ -666,17 +631,11 @@
     exportUniforms.u_resolution.value.set(width, height);
     exportUniforms.u_gridSize.value = exportGridSize;
 
-    // Update texture scale for export resolution
-    let sourceWidth, sourceHeight;
-    if (currentSourceType === 'video') {
-      sourceWidth = video.videoWidth || 1920;
-      sourceHeight = video.videoHeight || 1080;
-    } else if (uploadedImage) {
+    let sourceWidth = video.videoWidth || 1920;
+    let sourceHeight = video.videoHeight || 1080;
+    if (currentSourceType !== 'video' && uploadedImage) {
       sourceWidth = uploadedImage.width;
       sourceHeight = uploadedImage.height;
-    } else {
-      sourceWidth = 1920;
-      sourceHeight = 1080;
     }
     const aspect = (width / height) / (sourceWidth / sourceHeight);
     exportUniforms.u_textureScale.value.set(aspect > 1 ? 1 : aspect, aspect > 1 ? 1 / aspect : 1);
@@ -691,7 +650,6 @@
     const exportScene = new THREE.Scene();
     exportScene.add(new THREE.Mesh(geometry, exportMaterial));
 
-    // Setup MediaRecorder
     const stream = offCanvas.captureStream(30);
     const mediaRecorder = new MediaRecorder(stream, {
       mimeType: 'video/webm;codecs=vp9',
@@ -699,9 +657,7 @@
     });
 
     const chunks = [];
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
 
     mediaRecorder.onstop = () => {
       const blob = new Blob(chunks, { type: 'video/webm' });
@@ -712,7 +668,6 @@
       a.click();
       URL.revokeObjectURL(url);
 
-      // Cleanup
       offRenderer.dispose();
       exportMaterial.dispose();
 
@@ -724,15 +679,13 @@
       isExporting = false;
     };
 
-    // Get video duration for one loop
     const duration = video.duration || 10;
     const fps = 30;
     const totalFrames = Math.ceil(duration * fps);
     let frameCount = 0;
 
-    // Seek video to start
     video.currentTime = 0;
-    await new Promise(r => video.onseeked = r);
+    await new Promise(r => { video.onseeked = r; });
 
     mediaRecorder.start();
     if (exportStatus) exportStatus.textContent = 'Recording...';
