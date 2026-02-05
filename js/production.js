@@ -15,26 +15,27 @@
  *      data-video-src="https://example.com/video.mp4"
  *      data-fg-color="#C8C8C8"
  *      data-bg-color="#EDEDED"
- *      data-halftone-config='{"gridSize":20,"minRadius":0.2,"maxRadius":0.5,"contrast":1.0,"brightness":0.0}'>
+ *      data-halftone-config='{"gridSize":20,"dotSize":0.35,"sizeVariation":0.5,"contrast":1.0,"brightness":0.0}'>
  * </div>
  *
  * Config options:
  * - gridSize: Size of halftone grid (default: 20)
- * - minRadius: Minimum dot radius (default: 0.2)
- * - maxRadius: Maximum dot radius (default: 0.5)
- * - morphStart: Morph start threshold (default: 0.75)
- * - morphEnd: Morph end threshold (default: 0.95)
+ * - dotSize: Overall dot size 0.1-0.9 (default: 0.35)
+ * - sizeVariation: Random size variation 0-1 (default: 0.5)
+ * - morphStart: Morph start threshold (default: 0.9)
+ * - morphEnd: Morph end threshold (default: 1.0)
  * - thresholdStart: Black point (default: 0.0)
- * - thresholdEnd: White point (default: 0.2)
- * - gridAngle: Rotation angle in degrees (default: 0)
+ * - thresholdEnd: White point (default: 1.0)
+ * - gridAngle: Rotation angle in degrees (default: 90)
  * - shapeMode: "circle", "square", or "mix" (default: "mix")
- * - dotSize: Overall dot size multiplier (default: 1.0)
- * - sizeVariation: Random size variation 0-1 (default: 0.0)
  * - opacityVariation: Random opacity variation 0-1 (default: 0.0)
  * - contrast: Contrast adjustment 0.5-2.0 (default: 1.0)
  * - brightness: Brightness adjustment -0.5-0.5 (default: 0.0)
  * - invert: Invert grayscale (default: false)
- * - shimmerAmount: Blue noise shimmer 0-1 (default: 0.0)
+ * - shimmerAmount: Blue noise shimmer 0-0.5 (default: 0.0)
+ *
+ * Legacy support:
+ * - minRadius/maxRadius: Converted to dotSize/sizeVariation automatically
  */
 
 (function () {
@@ -45,7 +46,7 @@
   let sharedBlueNoise = null;
   const blueNoiseLoader = new THREE.TextureLoader();
   blueNoiseLoader.load(
-    'https://momentsingraphics.de/Media/BlueNoise/LDR_RGBA_0.png',
+    'https://cdn.jsdelivr.net/gh/Calinou/free-blue-noise-textures@master/64_64/LDR_LLL1_0.png',
     (tex) => {
       sharedBlueNoise = tex;
       sharedBlueNoise.wrapS = THREE.RepeatWrapping;
@@ -109,6 +110,16 @@
       return null;
     }
 
+    // Legacy config migration: convert minRadius/maxRadius to dotSize/sizeVariation
+    if (config.minRadius !== undefined || config.maxRadius !== undefined) {
+      const minR = config.minRadius !== undefined ? config.minRadius : 0.2;
+      const maxR = config.maxRadius !== undefined ? config.maxRadius : 0.5;
+      // Map maxRadius to dotSize (0.5 max becomes ~0.35 dotSize as default)
+      config.dotSize = config.dotSize !== undefined ? config.dotSize : maxR * 0.7;
+      // Map difference to sizeVariation
+      config.sizeVariation = config.sizeVariation !== undefined ? config.sizeVariation : Math.min((maxR - minR) / maxR, 1.0);
+    }
+
     const videoSrc = container.getAttribute('data-video-src') || config.videoSrc || "";
     const fgColor = container.getAttribute('data-fg-color') || config.dotColor || "#C8C8C8";
     const bgColor = container.getAttribute('data-bg-color') || config.bgColor || "#ededed";
@@ -162,20 +173,18 @@
       u_time: { value: 0 },
       u_textureScale: { value: new THREE.Vector2(1, 1) },
       u_gridSize: { value: safeVal(config.gridSize, 20.0) },
-      u_minRadius: { value: safeVal(config.minRadius, 0.2) },
-      u_maxRadius: { value: safeVal(config.maxRadius, 0.5) },
-      u_morphStart: { value: safeVal(config.morphStart, 0.75) },
-      u_morphEnd: { value: safeVal(config.morphEnd, 0.95) },
+      u_morphStart: { value: safeVal(config.morphStart, 0.9) },
+      u_morphEnd: { value: safeVal(config.morphEnd, 1.0) },
       u_thresholdStart: { value: safeVal(config.thresholdStart, 0.0) },
-      u_thresholdEnd: { value: safeVal(config.thresholdEnd, 0.2) },
-      u_angle: { value: safeVal(config.gridAngle, 0.0) * (Math.PI / 180) },
+      u_thresholdEnd: { value: safeVal(config.thresholdEnd, 1.0) },
+      u_angle: { value: safeVal(config.gridAngle, 90.0) * (Math.PI / 180) },
       u_bgColor: { value: new THREE.Color(bgColor) },
       u_dotColor: { value: new THREE.Color(fgColor) },
       u_showColor: { value: safeVal(config.showColor, 0.0) },
       u_shapeMode: { value: 2.0 },
       // New uniforms
-      u_dotSize: { value: safeVal(config.dotSize, 1.0) },
-      u_sizeVariation: { value: safeVal(config.sizeVariation, 0.0) },
+      u_dotSize: { value: safeVal(config.dotSize, 0.35) },
+      u_sizeVariation: { value: safeVal(config.sizeVariation, 0.5) },
       u_opacityVariation: { value: safeVal(config.opacityVariation, 0.0) },
       u_contrast: { value: safeVal(config.contrast, 1.0) },
       u_brightness: { value: safeVal(config.brightness, 0.0) },
@@ -197,25 +206,11 @@
         uniform vec2 u_resolution;
         uniform vec2 u_textureScale;
         uniform float u_time;
-        uniform float u_gridSize;
-        uniform float u_minRadius;
-        uniform float u_maxRadius;
-        uniform float u_morphStart;
-        uniform float u_morphEnd;
-        uniform float u_thresholdStart;
-        uniform float u_thresholdEnd;
-        uniform vec3 u_bgColor;
-        uniform vec3 u_dotColor;
-        uniform float u_showColor;
-        uniform float u_shapeMode;
-        uniform float u_angle;
-        uniform float u_dotSize;
-        uniform float u_sizeVariation;
-        uniform float u_opacityVariation;
-        uniform float u_contrast;
-        uniform float u_brightness;
-        uniform float u_invert;
-        uniform float u_shimmerAmount;
+        uniform float u_gridSize, u_morphStart, u_morphEnd;
+        uniform float u_thresholdStart, u_thresholdEnd, u_showColor, u_shapeMode, u_angle;
+        uniform float u_dotSize, u_sizeVariation, u_opacityVariation;
+        uniform float u_contrast, u_brightness, u_invert, u_shimmerAmount;
+        uniform vec3 u_bgColor, u_dotColor;
         in vec2 vUv;
         out vec4 fragColor;
 
@@ -242,19 +237,14 @@
         void main() {
           vec2 pixelPos = vUv * u_resolution;
           vec2 center = u_resolution * 0.5;
-          vec2 centeredPos = pixelPos - center;
           mat2 rot = rotate2d(u_angle);
-          vec2 rotatedPos = rot * centeredPos;
+          vec2 rotatedPos = rot * (pixelPos - center);
           vec2 gridIndex = floor(rotatedPos / u_gridSize);
           vec2 cellCenterRotated = (gridIndex + 0.5) * u_gridSize;
-          mat2 rotInv = transpose(rot);
-          vec2 cellCenterUnrotated = (rotInv * cellCenterRotated) + center;
-          vec2 cellUV = cellCenterUnrotated / u_resolution;
-          vec2 videoUV = getCoverUV(cellUV);
-          vec3 col = texture(u_texture, videoUV).rgb;
-          float gray = getGray(col);
-          float safeEnd = max(u_thresholdEnd, u_thresholdStart + 0.001);
-          float z = smoothstep(u_thresholdStart, safeEnd, gray);
+          vec2 cellUV = (transpose(rot) * cellCenterRotated + center) / u_resolution;
+
+          vec3 col = texture(u_texture, getCoverUV(cellUV)).rgb;
+          float z = smoothstep(u_thresholdStart, max(u_thresholdEnd, u_thresholdStart + 0.01), getGray(col));
 
           // Size variation based on cell position
           float sizeVar = 1.0;
@@ -266,20 +256,19 @@
           // Shimmer effect using blue noise
           float shimmer = 1.0;
           if (u_shimmerAmount > 0.0 && u_blueNoise != u_texture) {
-            vec2 noiseUV = gridIndex * 0.1 + u_time * 0.5;
+            vec2 noiseUV = gridIndex * 0.1 + vec2(sin(u_time * 0.5) * 0.1, cos(u_time * 0.3) * 0.1);
             float noiseVal = texture(u_blueNoise, noiseUV).r;
-            shimmer = mix(1.0, 0.3 + noiseVal * 0.7, u_shimmerAmount);
+            shimmer = mix(1.0, 0.5 + noiseVal * 0.5, u_shimmerAmount);
           }
 
-          float radius = mix(u_minRadius, u_maxRadius, z) * 0.5 * u_dotSize * sizeVar * shimmer;
+          float radius = z * 0.5 * u_dotSize * sizeVar * shimmer;
           vec2 localPos = (rotatedPos - cellCenterRotated) / u_gridSize;
-          float morphFactor = smoothstep(u_morphStart, u_morphEnd, z);
-          if (u_shapeMode == 0.0) morphFactor = 0.0;
-          else if (u_shapeMode == 1.0) morphFactor = 1.0;
-          float dMetric = mix(length(localPos), max(abs(localPos.x), abs(localPos.y)), morphFactor);
-          float dist = dMetric - radius;
-          float aa = fwidth(dist);
-          float mask = 1.0 - smoothstep(-aa, 0.0, dist);
+          float m = smoothstep(u_morphStart, u_morphEnd, z);
+          if (u_shapeMode == 0.0) m = 0.0;
+          else if (u_shapeMode == 1.0) m = 1.0;
+
+          float dist = mix(length(localPos), max(abs(localPos.x), abs(localPos.y)), m) - radius;
+          float mask = 1.0 - smoothstep(-fwidth(dist), 0.0, dist);
 
           // Opacity variation
           float opacity = 1.0;
@@ -290,8 +279,7 @@
           mask *= opacity;
 
           if (u_showColor > 0.5) { fragColor = texture(u_texture, getCoverUV(vUv)); return; }
-          vec3 finalColorLinear = mix(u_bgColor, u_dotColor, mask);
-          fragColor = vec4(linearToSRGB(finalColorLinear), 1.0);
+          fragColor = vec4(linearToSRGB(mix(u_bgColor, u_dotColor, mask)), 1.0);
         }
       `
     });
